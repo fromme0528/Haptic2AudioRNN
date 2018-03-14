@@ -2,13 +2,10 @@
 
 '''
 
-Input Size : 250,3 (500Hz Accleration)
+Input Size : 2000,2 (500Hz Accleration)
 Output Size : 8000 (16000Hz Audio Sampling Rate)
 
-250*8 = 2000
-->4
-
-Input Size : 2000,3
+Input Size : 2000,2
 Output Size : 8000
 
 np.finfo(np.float32)
