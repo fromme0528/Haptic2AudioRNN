@@ -94,6 +94,7 @@ def processing(input_list, mode, input_type):
     return input_list
 
 #filePath = "acceleration_0213\wood_hit.csv"
+#500
 def divide_accel_csv(inPath):
     with open(os.path.join(inPath),'r') as csvfile:
         data_accel = csv.reader(csvfile)
@@ -153,6 +154,7 @@ def interpolation(a,b,num):
     return outputList
 
 #inPath = "wav_0213\water_hit_volumeUp.wav"
+#16000
 def divide_audio(inPath):
 
     #load audio#hp_default.sr
