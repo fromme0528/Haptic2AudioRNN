@@ -52,7 +52,13 @@ class AudioLoader(torchData.Dataset):
             data_accel = [line for line in rdr]
 
             for idx2,each_line in enumerate(data_accel) :
+
                 each_line = [float(i) for i in each_line]
+                #x,y,z 3 axis -> sum(x,y,z) 1 axis
+                #and material property
+                sum_3axis = np.sum(each_line[0:2])
+                sum_3axis *= 10
+                each_line = [sum_3axis, each_line[-1]]
                 data_accel[idx2] = each_line
 
             data_accel = np.array(data_accel)
@@ -64,13 +70,28 @@ class AudioLoader(torchData.Dataset):
             
             #Problem : Audio Preprocessing
             #audio_normalized = preprocessing.normalizeAudio(audio)
-            
+            audio = processing(audio, mode = 'pre', input_type = 'audio')
+
             data_audio = torch.from_numpy(audio_normalized)
 
         return data_accel, data_audio #input-label
 
     def __len__(self):
         return self.len
+
+def processing(input_list, mode, input_type):
+    
+    if mode == 'pre':
+        if input_type == 'accel':
+            input_list = 10 * input_list
+        elif input_type =='audio':
+            input_list = 10 * input_list
+    
+    elif mode =='post':
+        if input_type == 'audio':
+            input_list = input_list / 10.0
+
+    return input_list
 
 #filePath = "acceleration_0213\wood_hit.csv"
 def divide_accel_csv(inPath):
