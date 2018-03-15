@@ -18,7 +18,6 @@ import librosa
 
 from sklearn.decomposition import PCA
 
-
 # Problem : Validation Set
 # https://github.com/pytorch/examples/blob/master/snli/train.py
 
@@ -93,44 +92,44 @@ def processing(input_list, mode, input_type):
 
     return input_list
 
-#filePath = "acceleration_0213\wood_hit.csv"
-#500
+# filePath = "acceleration_0213\wood_hit.csv"
+# 500
 def divide_accel_csv(inPath):
-    with open(os.path.join(inPath),'r') as csvfile:
+
+    # 'cp949' codec can't decode
+    with open(os.path.join(inPath),'r',encoding='UTF8') as csvfile:
+
         data_accel = csv.reader(csvfile)
-        tmp = 40
-        blankCatch = [0,0,0,0]
+        tmp = 400#400 for plastic, 375 for steel
         result = list()
         for idx, data in enumerate(data_accel):
             if idx<tmp:
                 continue
-            if idx>tmp+24:
-                with open (os.path.join("input_accel_0213\wood_accel_"+str(int((idx+10)/50))+'.csv'),'w',newline='') as fs:
+            if idx>tmp+249:
+                with open (os.path.join("dataset/accel_split/accel_plastic_"+str(int((idx)/500)-1)+'.csv'),'w',newline='') as fs:
                     wr = csv.writer(fs)
                     for row in result:
                         wr.writerow(row)
                 result = []
-                tmp = tmp+50
+                tmp = tmp+500
                 #print(str(int((idx+10)/50)))
                 continue
-            # 손으로 보정
-            # 연속으로 비어있는 칸도 있고 그럼.
 
-            for i in range(1,4):
-
-                if data[i] == "":
-                    print(idx)
-            new = data[1:]
+                #label
+            new = data[:]
             new.append('0.0')
             
             result.append(new)
-            #result.append(data[1:])
 
-#PCA
-#x,y,z -> 1 axis
-#input list [[x1,y1,z1], [x2,y2,z2], ...]
-#input shape (N,3)
-#output shape (N,1)
+#divide_accel_csv("dataset/accel_plastic.csv")
+
+'''
+PCA (x,y,z -> 1 axis)
+input list [[x1,y1,z1], [x2,y2,z2], ...]
+input shape (N,3)
+output shape (N,1)
+'''
+
 def PCA(input_list):
     
     pca = PCA(n_components=3)
@@ -158,24 +157,21 @@ def interpolation(a,b,num):
 def divide_audio(inPath):
 
     #load audio#hp_default.sr
-    audio, rate = librosa.load(, mono=True, sr = hp_default.sr)
+    audio, rate = librosa.load(inPath, mono=True, sr = hp_default.sr)
+
+    print (audio, rate)
+    print (len(audio))
+    print (len(audio)/rate)
+    print (int(len(audio)/rate))
 
     #Set Starting Point
-    temp = 4800
-    for i in range(1,146):
-        librosa.output.write_wav(os.path.join("input_audio_0213","sample_audio_"+str(i)+".wav"),audio[int(temp):int(temp+8000)],sr=hp_default.sr)
+    temp = 12800
+    for i in range(0,int(len(audio)/rate)+1):
+        librosa.output.write_wav(os.path.join("dataset/audio_split","audio_steel_"+str(i)+".wav"),audio[int(temp):int(temp+8000)],sr=hp_default.sr)
         temp += 16000
 
-
-
-
-
-
-
-
-
-
-
+#divide_audio("dataset/audio_plastic_all.wav")
+#divide_audio("dataset/audio_steel_all.wav")
 
 def divide_accel_csv_old(inPath):
     with open(os.path.join(inPath),'r') as csvfile:

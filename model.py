@@ -98,6 +98,7 @@ class Manager(nn.Module):
 
         criterion_cnn = nn.CrossEntropyLoss()
         optimizer_cnn = torch.optim.Adam(self.cnn.parameters(), lr=hp_cnn.learning_rate)
+        
         print('Train started')
         for epoch in range(hp_cnn.num_epochs):
             for idx, data in enumerate(trainLoader,0):
