@@ -27,19 +27,19 @@ class Cnn:
 	batch_size = 1
 	learning_rate = 0.0001#0.00001
 
-
 # HyperParameters for RNN
 # retrieved from yunjei's pytorch tutorial
 # https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/02-intermediate/recurrent_neural_network/main.py
 # GRU is good for small data <-> LSTM. http://aikorea.org/blog/rnn-tutorial-4/
-class Rnn:
-	sequence_length = 28
-	input_size = 28
-	hidden_size= 128
-	num_layers = 2
-	num_classes = 10
 
-	num_data = 9
+class Rnn:
+	sequence_length = 2000#1
+	input_size = 2#2
+	hidden_size= 8000
+	num_layers = 2
+	num_classes = 4
+
+	num_data = 304
 	num_epochs = 3
 	batch_size = 1
 	learning_rate = 0.0001
