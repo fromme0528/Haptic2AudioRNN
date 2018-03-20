@@ -24,9 +24,9 @@ from sklearn.decomposition import PCA
 class AudioLoader(torchData.Dataset):
 
     # "input_accel_mmdd"
-    # "input_spectro_mmdd"
+    # "input_audio_mmdd"
 
-    def __init__(self, inPathAccel, inPathAudio,size,isShuffle=False):
+    def __init__(self, inPathAccel, inPathAudio,isShuffle=False):
 
         files_accel = os.listdir(inPathAccel) 
         files_accel = [f for f in files_accel if os.path.splitext(f)[-1] == '.csv']
@@ -38,10 +38,13 @@ class AudioLoader(torchData.Dataset):
 
         self.inPathAccel = inPathAccel
         self.inPathAudio = inPathAudio
-        self.fileList_accel = files_accel[:size]
-        self.fileList_audio = files_audio[:size]
-        self.len = size
+        self.len = len(files_accel)
+        self.fileList_accel = files_accel[:self.len]
+        self.fileList_audio = files_audio[:self.len]
         self.isShuffle = isShuffle
+
+        print('len of dataset : ',self.len, len(files_audio))
+
 
     def __getitem__(self, idx):
 
@@ -53,25 +56,26 @@ class AudioLoader(torchData.Dataset):
             for idx2,each_line in enumerate(data_accel) :
 
                 each_line = [float(i) for i in each_line]
-                #x,y,z 3 axis -> sum(x,y,z) 1 axis
-                #and material property
+                
+                #x,y,z 3 axis -> sum(x,y,z) 1 axis and material property
                 sum_3axis = np.sum(each_line[0:2])
                 sum_3axis *= 10
                 each_line = [sum_3axis, each_line[-1]]
+
                 data_accel[idx2] = each_line
 
             data_accel = np.array(data_accel)
             data_accel = torch.from_numpy(data_accel)
 
-        with open(os.path.join(self.inPathAudio, self.fileList_audio[idx]),'rb') as fs:
+        #with open(os.path.join(self.inPathAudio, self.fileList_audio[idx]),'rb') as fs:
             
-            audio, rate = librosa.load(fs, mono=True, sr = hp_default.sr) 
-            
-            #Problem : Audio Preprocessing
-            #audio_normalized = preprocessing.normalizeAudio(audio)
-            audio = processing(audio, mode = 'pre', input_type = 'audio')
+        audio, rate = librosa.load(self.inPathAudio+'/'+self.fileList_audio[idx], mono=True, sr = hp_default.sr) 
+#        여기문제~~안읽힘~~
+        #Problem : Audio Preprocessing
+        #audio_normalized = preprocessing.normalizeAudio(audio)
+        audio = processing(audio, mode = 'pre', input_type = 'audio')
 
-            data_audio = torch.from_numpy(audio_normalized)
+        data_audio = torch.from_numpy(audio)
 
         return data_accel, data_audio #input-label
 
@@ -121,6 +125,72 @@ def divide_accel_csv(inPath):
             
             result.append(new)
 
+def duplicate(inPath_folder):
+
+    files_accel = os.listdir(inPath_folder) 
+    files_accel = [f for f in files_accel if os.path.splitext(f)[-1] == '.csv']
+
+    for inPath in files_accel:
+    # 'cp949' codec can't decode
+        print(inPath_folder + inPath)
+        with open(os.path.join(inPath_folder + inPath),'r',encoding='UTF8') as csvfile:
+
+            data_accel = csv.reader(csvfile)
+            data_accel = [line for line in data_accel]
+
+            output = list()
+
+            for idx,line in enumerate(data_accel) :
+
+                line = [float(i) for i in line]
+
+                if idx != (len(data_accel) - 1):
+                    line_next = [float(i) for i in data_accel[idx+1]]
+#                    interval = list(set(data_accel[idx+1][0:2]) - set(line[0:2]))
+                    interval = list()
+                    interval.append(line_next[0] - line[0])
+                    interval.append(line_next[1] - line[1])
+                    interval.append(line_next[2] - line[2])
+
+                    for i in range(0,8,1):
+                        temp = list()
+                        temp.append(line[0] + (interval[0] * i * 0.125))
+                        temp.append(line[1] + (interval[1] * i * 0.125))
+                        temp.append(line[2] + (interval[2] * i * 0.125))
+                        temp.append(line[-1])
+                        output.append(temp)
+                else:
+                    for i in range(0,8,1):
+                        output.append(line)
+        with open (os.path.join("dataset/input_accel/"+inPath),'w',newline='') as fs:
+            wr = csv.writer(fs)
+            for row in output:
+                wr.writerow(row)
+                
+
+#duplicate("./dataset/accel_split/")
+
+
+                
+
+# input : a,b
+# output : data in (b,c)
+
+def interpolation(aList,bList,num):
+
+    outputList = list()
+
+    interval = aList[0:2] - bList[0:2]
+
+    for i in range(1,num):
+
+        output.append(b + interval/num)
+
+    return outputList
+
+
+
+
 #divide_accel_csv("dataset/accel_plastic.csv")
 
 '''
@@ -138,19 +208,6 @@ def PCA(input_list):
     
     return pca.singular_values_
 
-# input : a,b
-# output : data in (b,c) 
-def interpolation(a,b,num):
-
-    outputList = list()
-
-    interval = a-b
-
-    for i in range(1,num):
-
-        output.append(b + interval/num)
-
-    return outputList
 
 #inPath = "wav_0213\water_hit_volumeUp.wav"
 #16000

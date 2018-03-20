@@ -11,6 +11,9 @@ def getTime():
 	timeText = str(now.tm_year)[-2:] + '%02d%02d%02d%02d_' % (now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min)
 
 	return timeText
+
+
+	
 '''
 #Not Used
 def divideList(target, size):

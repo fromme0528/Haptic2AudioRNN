@@ -43,23 +43,16 @@ import hparams as hp
 from hparams import Linear as hp_linear
 from hparams import Rnn as hp_rnn
 from hparams import Default as hp_default
+import dataloader
 import time
 import util
 import stft
 import gc
 import librosa
 
-sequence_len = 1
-input_size = 2
-
-hidden_size = 8000
-num_layers = 2
-num_classes = 4
-
-batch_size = 50
-num_epochs = 3
-learning_rate = 0.001
-
+def Flatten_fun(x):
+    N, H, W = x.size()
+    return x.view(N, -1)
 
 class Haptic2AudioRNN(nn.Module):
     def __init__(self):
@@ -69,34 +62,44 @@ class Haptic2AudioRNN(nn.Module):
         self.hidden_size = hp_rnn.hidden_size
         self.num_layers = hp_rnn.num_layers
         self.num_classes = hp_rnn.num_classes
+        self.batch_size = hp_rnn.batch_size
+        self.sequence_len = hp_rnn.sequence_len
 
-        self.model = nn.LSTM(input_size = input_size, hidden_size = hidden_size, num_layers = num_layers, batch_first = True)
-        
+        self.model = nn.RNN(input_size = self.input_size, hidden_size = self.hidden_size,
+                             num_layers = self.num_layers, batch_first = True)
+        #LSTM
 
-    def forward(self, hideen, x):
+    def forward(self, x, hidden):
+        hidden = None
+#        print(x) #1x2000x2
+        x = x.view(self.batch_size, self.sequence_len, self.input_size)
 
-        x = x.view(batch_size, sequence_len, input_size)
+#        print(hidden) #1x2x8000
         out, hidden = self.model(x, hidden)
         return hidden, out.view(-1, num_classes)
 
     def init_hidden(self):
-        return Variable(torch.zeros(batch_size, num_layers, hidden_size))
+        # Set initial states 
+        hidden = Variable(torch.zeros(self.num_layers,self.batch_size, self.hidden_size))
 
+        #h0 = Variable(torch.zeros(self.num_layers, self.batch_size, self.hidden_size)) 
+        #c0 = Variable(torch.zeros(self.num_layers, self.batch_size, self.hidden_size))
+        return hidden
+         
 
 class Manager(nn.Module):
-    def __init__(self, inPath, inPath2, outPath, num_data):
+    def __init__(self, inPath, inPath2, outPath):
 
         super(Manager, self).__init__()
 
         self.inPath = inPath
-        self.inPat2 = inPath2
+        self.inPath2 = inPath2
         self.outPath = outPath
-        self.num_data = num_data
 
         self.model = Haptic2AudioRNN()
 
-    if torch.cuda.is_available():
-            self.model.cuda()
+        #if torch.cuda.is_available():
+        #    self.model.cuda()
         self.model.double()
 
         self.LossHistory = list()
@@ -142,7 +145,9 @@ class Manager(nn.Module):
 
     def train(self):
 
-        dataSet = AudioLoader(os.path.join(self.inPath),os.path.join(self.inPath2),hp_rnn.num_data)
+        print('Dataset Load')
+        dataSet = dataloader.AudioLoader(os.path.join(self.inPath),os.path.join(self.inPath2))
+#        dataSet = dataloader.AudioLoader(self.inPath,self.inPath2)
 
         trainLoader = torchData.DataLoader(
             dataset = dataSet,
@@ -159,30 +164,30 @@ class Manager(nn.Module):
             
             start_time = time.time()
 
-            for idx, data in enumerate(trainLoader, 0):
+            for idx, data in enumerate(trainLoader):#,0
 
                 # y : audio(8000)
                 x, y = data
                 x = Variable(x)# x : accel(2000,2)
 
                 y = Variable(y.type(torch.FloatTensor), requires_grad = False)
-                y = Flatten_fun(y)
                 y = y.double()
 
                 optimizer.zero_grad()
                 loss = 0
-                hidden = model.init_hidden()
+                hidden = self.model.init_hidden()
 
-                outputs = self.model.forward(x)
+                hidden, outputs = self.model.forward(x,hidden)
                 loss = criterion(outputs,y)
 
                 loss.backward()
                 optimizer.step()
+
                 self.lossHistory.append((epoch,idx,loss.data[0]))
 
-            print ('Epoch [%d/%d], Iter [%d/%d], Loss: %.4f'
-                   %(epoch+1, hp_cnn.num_epochs,idx+1, hp_cnn.num_data//hp_cnn.batch_size, loss.data[0]))
-            print("--- %s seconds for epoch ---" % (time.time() - start_time))
+                print ('Epoch [%d/%d], Iter [%d/%d], Loss: %.4f'
+                       %(epoch+1, hp_rnn.num_epochs,idx+1, hp_rnn.num_data//hp_rnn.batch_size, loss.data[0]))
+                print("--- %s seconds for epoch ---" % (time.time() - start_time))
             self.save(self.outPath, 'epoch' + str(epoch))
 
         self.save(self.outPath, 'final')

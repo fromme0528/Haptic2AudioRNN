@@ -13,12 +13,12 @@ import numpy as np
 
 # Usage : python main.py <inPath> <outPath> <modelPath> <mode> <prefix>
 #
-#         python main.py ./input_accel_train ./input_audio_train ./output train ""
+#         python solver.py ./dataset/input_accel ./dataset/audio_split ./output train ""
 #         python main.py ./input_accel_test ./output_audio_test ./output convert ""
 #         python main.py ./input_accel_test ./output_audio_test ./output_model convert final
 
 def main(config):
-    model = Manager(config.inPath, config.inPath2, config.modelPath, hp_cnn.num_data)
+    model = Manager(config.inPath, config.inPath2, config.modelPath)
     if config.mode == "train":
 
         model.train()
