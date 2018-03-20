@@ -103,7 +103,7 @@ class Manager(nn.Module):
         #    self.model.cuda()
         self.model.double()
 
-        self.LossHistory = list()
+        self.lossHistory = list()
 
     def load(self,inPath, prefix = '', time = ''):
 
@@ -137,7 +137,6 @@ class Manager(nn.Module):
 
         try:
             torch.save(self.model.cpu(), os.path.join(outPath, timeText + prefix+'rnn.model'))
-        
         except:
             print('error : can\'t save model')
 
@@ -156,7 +155,7 @@ class Manager(nn.Module):
             shuffle = False
         )
 
-        criterion = nn.CrossEntropyLoss()
+        #criterion = nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(self.model.parameters(),lr = hp_rnn.learning_rate)
 
         print('Train Start...')
@@ -171,26 +170,35 @@ class Manager(nn.Module):
                 x, y = data
                 x = Variable(x)# x : accel(2000,2)
 
-                y = Variable(y.type(torch.FloatTensor), requires_grad = False)
-                y = y.double()
+                y = Variable(y.type(torch.DoubleTensor), requires_grad = False)
 
                 optimizer.zero_grad()
                 loss = 0
                 hidden = self.model.init_hidden()
 
                 hidden, outputs = self.model.forward(x,hidden)
-                loss = criterion(outputs,y)
+                #loss = criterion(outputs,y)
+                
+#                loss = torch.sum(torch.abs(y -  outputs.long())) / 8000.0
+                outputs = outputs.view(1,8000)
 
+                
+                loss = torch.sum(torch.abs(y -  outputs)) / 8000.0
+                
                 loss.backward()
                 optimizer.step()
-
+                
+                if idx%20 == 0:
+                    util.printInfo(y)
+                    util.printInfo(outputs)
+                    print ('Epoch [%d/%d], Iter [%d/%d], Loss: %.4f'
+                       %(epoch+1, hp_rnn.num_epochs,idx+1, 332//hp_rnn.batch_size, loss.data[0]))
+                    print("--- %s seconds for epoch ---" % (time.time() - start_time))
                 self.lossHistory.append((epoch,idx,loss.data[0]))
 
-                print ('Epoch [%d/%d], Iter [%d/%d], Loss: %.4f'
-                       %(epoch+1, hp_rnn.num_epochs,idx+1, hp_rnn.num_data//hp_rnn.batch_size, loss.data[0]))
-                print("--- %s seconds for epoch ---" % (time.time() - start_time))
+            
             self.save(self.outPath, 'epoch' + str(epoch))
-
+            
         self.save(self.outPath, 'final')
         print(self.lossHistory)
 

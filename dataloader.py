@@ -30,9 +30,14 @@ class AudioLoader(torchData.Dataset):
 
         files_accel = os.listdir(inPathAccel) 
         files_accel = [f for f in files_accel if os.path.splitext(f)[-1] == '.csv']
+        files_accel.sort()
         files_audio = os.listdir(inPathAudio) 
         files_audio = [f for f in files_audio if os.path.splitext(f)[-1] == '.wav']
-
+        files_audio.sort()
+        
+#        print(files_accel)
+#        print(files_audio)
+        
         if isShuffle:
             random.shuffle(files_accel)
 
@@ -68,14 +73,15 @@ class AudioLoader(torchData.Dataset):
             data_accel = torch.from_numpy(data_accel)
 
         #with open(os.path.join(self.inPathAudio, self.fileList_audio[idx]),'rb') as fs:
-            
+        
         audio, rate = librosa.load(self.inPathAudio+'/'+self.fileList_audio[idx], mono=True, sr = hp_default.sr) 
 #        여기문제~~안읽힘~~
         #Problem : Audio Preprocessing
         #audio_normalized = preprocessing.normalizeAudio(audio)
-        audio = processing(audio, mode = 'pre', input_type = 'audio')
-
-        data_audio = torch.from_numpy(audio)
+        #audio = processing(audio, mode = 'pre', input_type = 'audio')
+        #audio = [100*a for a in audio]
+        
+        data_audio = torch.from_numpy(np.array(audio))
 
         return data_accel, data_audio #input-label
 

@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import pickle
+import torch
 #import matplotlib.pyplot as plt
 
 def getTime():
@@ -12,7 +13,9 @@ def getTime():
 
 	return timeText
 
-
+def printInfo(a):
+    print(torch.mean(a.data), torch.var(a.data), torch.max(a.data), torch.min(a.data))
+    return
 	
 '''
 #Not Used
