@@ -76,7 +76,7 @@ class Haptic2AudioRNN(nn.Module):
 
 #        print(hidden) #1x2x8000
         out, hidden = self.model(x, hidden)
-        return hidden, out.view(-1, num_classes)
+        return hidden, out.view(-1, self.num_classes)
 
     def init_hidden(self):
         # Set initial states 
@@ -88,6 +88,7 @@ class Haptic2AudioRNN(nn.Module):
          
 
 class Manager(nn.Module):
+
     def __init__(self, inPath, inPath2, outPath):
 
         super(Manager, self).__init__()
