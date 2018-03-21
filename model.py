@@ -244,9 +244,9 @@ class Manager(nn.Module):
                             hidden = self.model.init_hidden()
                             hidden, outputs = self.model.forward(data_accel,hidden)
                             outputs = outputs.view(1,8000)
-                            outputs /= 10
+                            
                             #util.printInfo(outputs)
-                            librosa.output.write_wav(self.inPath2+"/"+timeText+str(i)+"_"+os.path.splitext(f)[0]+".wav", outputs.data.numpy()[0], 16000)
+                            librosa.output.write_wav(self.inPath2+"/"+timeText+str(i)+"_"+os.path.splitext(f)[0]+".wav", np.expm1(outputs.data.numpy())[0], 16000)
                             #power for noise
 #                            output = np.power(output,1.5)
         return 

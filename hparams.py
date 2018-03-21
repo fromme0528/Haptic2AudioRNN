@@ -30,9 +30,6 @@ class Default:
 	win_length = int(sr*frame_length) #400
 	timeLength = 0.5 #seconds
 
-    
-    
-    
 # Hyper Parameters for Linear
 class Linear:
 	num_data=9
