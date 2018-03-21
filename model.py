@@ -72,7 +72,8 @@ class Haptic2AudioRNN(nn.Module):
 
     def forward(self, x, hidden):
         hidden = None
-#        print(x) #1x2000x2
+        
+        #        print(x) #1x2000x2
         x = x.view(self.batch_size, self.sequence_len, self.input_size)
 
 #        print(hidden) #1x2x8000
@@ -100,14 +101,14 @@ class Manager(nn.Module):
 
         self.model = Haptic2AudioRNN()
 
-#        if torch.cuda.is_available():
-#            self.model.cuda()
+        if torch.cuda.is_available():
+            self.model.cuda()
 
         self.model.double()
 
         self.lossHistory = list()
 
-    def load(self,inPath, time = '', num = 0):
+    def load(self,inPath, time = '', num = 1):
         #prefix = ''
 #        if not prefix == '':
 #            prefix = prefix + '_'
@@ -116,19 +117,21 @@ class Manager(nn.Module):
             #load the model files which are created lastly
             files = os.listdir(inPath)
             files = [f for f in files if os.path.splitext(f)[-1] == '.model']
-            files.sort(reverse = True)
+            #files.sort(reverse = True)
+            files.sort()
+            print(files)
             #timeText = files[0][:10] + '_'
             #self.model = torch.load(os.path.join(inPath, timeText + prefix + 'rnn.model'))
-            self.model = torch.load(os.path.join(inPath, files[num]))
-            #if torch.cuda.is_available():
-            #    self.model.cuda()
+            self.model = torch.load(os.path.join(inPath, files[-num]))
+            if torch.cuda.is_available():
+                self.model.cuda()
 
         except:
             print('error : can\'t load model')
 
         else:
             #print('successfully loaded all model - ',timeText + prefix)
-            print('successfully loaded all model - ',files[num])
+            print('successfully loaded all model - ',files[-num])
 
 
     def save(self, outPath, prefix = ''):
@@ -159,7 +162,7 @@ class Manager(nn.Module):
             shuffle = False
         )
 
-        #criterion = nn.CrossEntropyLoss()
+        criterion = nn.NLLLoss()
         optimizer = torch.optim.Adam(self.model.parameters(),lr = hp_rnn.learning_rate)
 
         print('Train Start...')
@@ -181,13 +184,13 @@ class Manager(nn.Module):
                 hidden = self.model.init_hidden()
 
                 hidden, outputs = self.model.forward(x,hidden)
-                #loss = criterion(outputs,y)
                 
 #                loss = torch.sum(torch.abs(y -  outputs.long())) / 8000.0
                 outputs = outputs.view(1,8000)
-
-                
-                loss = torch.sum(torch.abs(y -  outputs)) / 8000.0
+#                print(outputs)
+ #               print(y)
+                #loss = criterion(outputs,y)
+                loss = torch.sum(torch.pow((y -  outputs),2)) / 8000.0
                 
                 loss.backward()
                 optimizer.step()
@@ -209,32 +212,41 @@ class Manager(nn.Module):
     def test(self):
 
         print ('Test Strat...')
+        timeText = util.getTime()
         num = 10
-        for i in range(0,num,1):
-            self.load(self.outPath, num = num)
+        for i in range(1,num+1,1):
+            self.load(self.outPath, num = i)
             for path, dirs, files in os.walk(self.inPath):
 
                 for f in files:
 
                     if os.path.splitext(f)[-1] == '.csv':
-
+                        
                         with open(os.path.join(path,f), 'r') as csvfile:
 
                             rdr = csv.reader(csvfile)
                             data_accel = [line for line in rdr]
                             for idx2,each_line in enumerate(data_accel) :
+
                                 each_line = [float(i) for i in each_line]
+
+                                #x,y,z 3 axis -> sum(x,y,z) 1 axis and material property
+                                sum_3axis = np.sum(each_line[0:2])
+                                sum_3axis *= 10
+                                each_line = [sum_3axis, each_line[-1]]
+
                                 data_accel[idx2] = each_line
 
                             data_accel = np.array(data_accel)
-                            data_accel = Variable(torch.from_numpy(data_accel), requires_grad = False)
-                            data_accel = data_accel.contiguous()
+                            data_accel = torch.from_numpy(data_accel)
+                            data_accel = Variable(data_accel)
 
                             hidden = self.model.init_hidden()
-                            hidden, outputs = self.model.forward(x,hidden)
+                            hidden, outputs = self.model.forward(data_accel,hidden)
                             outputs = outputs.view(1,8000)
-
-                            librosa.output.write_wav(str(num)+"_"+os.path.splitext(f)[0], outputs, 16000)
+                            outputs /= 10
+                            #util.printInfo(outputs)
+                            librosa.output.write_wav(self.inPath2+"/"+timeText+str(i)+"_"+os.path.splitext(f)[0]+".wav", outputs.data.numpy()[0], 16000)
                             #power for noise
 #                            output = np.power(output,1.5)
         return 

@@ -15,7 +15,7 @@ class Rnn:
 
 	num_epochs = 10
 	batch_size = 1
-	learning_rate = 0.00005
+	learning_rate = 0.0001
 
 # Hyper Parameters for audio processing
 # hparams from Deep Voice Conversion

@@ -80,6 +80,7 @@ class AudioLoader(torchData.Dataset):
         #audio_normalized = preprocessing.normalizeAudio(audio)
         #audio = processing(audio, mode = 'pre', input_type = 'audio')
         #audio = [100*a for a in audio]
+        audio *= 10
         
         data_audio = torch.from_numpy(np.array(audio))
 
