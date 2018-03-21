@@ -119,7 +119,6 @@ class Manager(nn.Module):
             files = [f for f in files if os.path.splitext(f)[-1] == '.model']
             #files.sort(reverse = True)
             files.sort()
-            print(files)
             #timeText = files[0][:10] + '_'
             #self.model = torch.load(os.path.join(inPath, timeText + prefix + 'rnn.model'))
             self.model = torch.load(os.path.join(inPath, files[-num]))
@@ -213,7 +212,7 @@ class Manager(nn.Module):
 
         print ('Test Strat...')
         timeText = util.getTime()
-        num = 10
+        num = 4
         for i in range(1,num+1,1):
             self.load(self.outPath, num = i)
             for path, dirs, files in os.walk(self.inPath):
