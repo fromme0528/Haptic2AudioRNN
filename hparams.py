@@ -7,13 +7,13 @@
 # GRU is good for small data <-> LSTM. http://aikorea.org/blog/rnn-tutorial-4/
 
 class Rnn:
-	sequence_len = 2000#1
-	input_size = 2#2
-	hidden_size= 4#8000
+	sequence_len = 2000 #1
+	input_size = 2 #2
+	hidden_size= 4 #8000
 	num_layers = 2
 	num_classes = 1
 
-	num_epochs = 100
+	num_epochs = 10
 	batch_size = 1
 	learning_rate = 0.00005
 

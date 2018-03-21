@@ -41,5 +41,6 @@ if __name__ == '__main__':
     parser.add_argument('prefix',type = str, help = "final, epoch0~N", default = "final")
 
     config = parser.parse_args()
-    print (config)
+
+    print(config)
     main(config)

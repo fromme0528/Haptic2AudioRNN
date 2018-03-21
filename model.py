@@ -31,6 +31,7 @@ finfo(resolution=1e-06, min=-3.4028235e+38, max=3.4028235e+38, dtype=float32)
 2000,2 -> 8000,1로 만들기
 (accel, material)-> (s,s,s,s)
 '''
+
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -99,13 +100,14 @@ class Manager(nn.Module):
 
         self.model = Haptic2AudioRNN()
 
-        #if torch.cuda.is_available():
-        #    self.model.cuda()
+        if torch.cuda.is_available():
+            self.model.cuda()
+
         self.model.double()
 
         self.lossHistory = list()
 
-    def load(self,inPath, prefix = '', time = ''):
+    def load(self,inPath, prefix = '', time = '', num = 0):
 
         if not prefix == '':
             prefix = prefix + '_'
@@ -115,8 +117,9 @@ class Manager(nn.Module):
             files = os.listdir(inPath)
             files = [f for f in files if os.path.splitext(f)[-1] == '.model']
             files.sort(reverse = True)
-            timeText = files[0][:10] + '_'
-            self.model = torch.load(os.path.join(inPath, timeText + prefix + 'rnn.model'))
+            #timeText = files[0][:10] + '_'
+            #self.model = torch.load(os.path.join(inPath, timeText + prefix + 'rnn.model'))
+            self.model = torch.load(os.path.join(inPath, files[num]))
             if torch.cuda.is_available():
                 self.model.cuda()
 
@@ -124,7 +127,8 @@ class Manager(nn.Module):
             print('error : can\'t load model')
 
         else:
-            print('successfully loaded all model - ',timeText + prefix)
+            #print('successfully loaded all model - ',timeText + prefix)
+            print('successfully loaded all model - ',files[num])
 
 
     def save(self, outPath, prefix = ''):
@@ -196,14 +200,25 @@ class Manager(nn.Module):
                     print("--- %s seconds for epoch ---" % (time.time() - start_time))
                 self.lossHistory.append((epoch,idx,loss.data[0]))
 
-            
             self.save(self.outPath, 'epoch' + str(epoch))
             
         self.save(self.outPath, 'final')
         print(self.lossHistory)
 
 
-    def test(self):
+    def test(self,prefix):
+
+        
+        num = 10
+        for i in range(0,num,1):
+            self.load(self.outPath, prefix = prefix, num = num)
+            
+
+
+
+
+
+
         return 
 
 
