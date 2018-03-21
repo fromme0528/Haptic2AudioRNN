@@ -13,9 +13,8 @@ import numpy as np
 
 # Usage : python main.py <inPath> <outPath> <modelPath> <mode> <prefix>
 #
-#         python solver.py ./dataset/input_accel ./dataset/audio_split ./output train ""
-#         python main.py ./input_accel_test ./output_audio_test ./output convert ""
-#         python main.py ./input_accel_test ./output_audio_test ./output_model convert final
+#         python solver.py ./dataset/input_accel ./dataset/audio_split ./output_model train
+#         python solver.py ./dataset/test_accel ./output_test ./output_model convert
 
 def main(config):
     model = Manager(config.inPath, config.inPath2, config.modelPath)
@@ -25,7 +24,8 @@ def main(config):
 
     elif config.mode == 'convert':
 
-        model.test(config.prefix)
+        #model.test(config.prefix)
+        model.test()
 
     else:
         print('Error : Mode must be "train" or "test"')
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('inPath2', type = str, help = "wav label dictionary for train or output dictionary for test")
     parser.add_argument('modelPath', type = str, help = "model Path")
     parser.add_argument('mode', type = str, choices=['train','convert'], help = 'Mode option : train, convert')
-    parser.add_argument('prefix',type = str, help = "final, epoch0~N", default = "final")
+    #parser.add_argument('prefix',type = str, help = "final, epoch0~N", default = "final")
 
     config = parser.parse_args()
 

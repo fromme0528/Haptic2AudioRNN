@@ -100,17 +100,17 @@ class Manager(nn.Module):
 
         self.model = Haptic2AudioRNN()
 
-        if torch.cuda.is_available():
-            self.model.cuda()
+#        if torch.cuda.is_available():
+#            self.model.cuda()
 
         self.model.double()
 
         self.lossHistory = list()
 
-    def load(self,inPath, prefix = '', time = '', num = 0):
-
-        if not prefix == '':
-            prefix = prefix + '_'
+    def load(self,inPath, time = '', num = 0):
+        #prefix = ''
+#        if not prefix == '':
+#            prefix = prefix + '_'
 
         try:
             #load the model files which are created lastly
@@ -120,8 +120,8 @@ class Manager(nn.Module):
             #timeText = files[0][:10] + '_'
             #self.model = torch.load(os.path.join(inPath, timeText + prefix + 'rnn.model'))
             self.model = torch.load(os.path.join(inPath, files[num]))
-            if torch.cuda.is_available():
-                self.model.cuda()
+            #if torch.cuda.is_available():
+            #    self.model.cuda()
 
         except:
             print('error : can\'t load model')
@@ -206,19 +206,37 @@ class Manager(nn.Module):
         print(self.lossHistory)
 
 
-    def test(self,prefix):
+    def test(self):
 
-        
+        print ('Test Strat...')
         num = 10
         for i in range(0,num,1):
-            self.load(self.outPath, prefix = prefix, num = num)
-            
+            self.load(self.outPath, num = num)
+            for path, dirs, files in os.walk(self.inPath):
 
+                for f in files:
 
+                    if os.path.splitext(f)[-1] == '.csv':
 
+                        with open(os.path.join(path,f), 'r') as csvfile:
 
+                            rdr = csv.reader(csvfile)
+                            data_accel = [line for line in rdr]
+                            for idx2,each_line in enumerate(data_accel) :
+                                each_line = [float(i) for i in each_line]
+                                data_accel[idx2] = each_line
 
+                            data_accel = np.array(data_accel)
+                            data_accel = Variable(torch.from_numpy(data_accel), requires_grad = False)
+                            data_accel = data_accel.contiguous()
 
+                            hidden = self.model.init_hidden()
+                            hidden, outputs = self.model.forward(x,hidden)
+                            outputs = outputs.view(1,8000)
+
+                            librosa.output.write_wav(str(num)+"_"+os.path.splitext(f)[0], outputs, 16000)
+                            #power for noise
+#                            output = np.power(output,1.5)
         return 
 
 
