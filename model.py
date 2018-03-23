@@ -36,6 +36,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.utils import data as torchData
+import torch.nn.functional as F
 import os
 import csv
 import pickle
@@ -50,6 +51,7 @@ import util
 import stft
 import gc
 import librosa
+import soundfile as sf
 
 def Flatten_fun(x):
     N, H, W = x.size()
@@ -161,7 +163,7 @@ class Manager(nn.Module):
             shuffle = False
         )
 
-        criterion = nn.NLLLoss()
+        criterion = nn.KLDivLoss(size_average = True)
         optimizer = torch.optim.Adam(self.model.parameters(),lr = hp_rnn.learning_rate)
 
         print('Train Start...')
@@ -188,16 +190,21 @@ class Manager(nn.Module):
                 outputs = outputs.view(1,8000)
 #                print(outputs)
  #               print(y)
-                #loss = criterion(outputs,y)
-                loss = torch.sum(torch.pow((y -  outputs),2)) / 8000.0
+#                loss = criterion(outputs,y)
+#                outputs += torch.min(outputs)
+#                outputs /= torch.sum(outputs)
+                #loss = criterion(F.log_softmax(outputs/torch.sum(outputs),dim=1),F.softmax(y/torch.sum(y),dim=1))
+                
+                loss = criterion(F.log_softmax(outputs/torch.sum(outputs),dim=1),F.softmax(y/torch.sum(y),dim=1))
+                #loss = torch.sum(torch.pow((y -  outputs),2)) / 8000.0
                 
                 loss.backward()
                 optimizer.step()
-                
+                #print(loss.data[0])
                 if idx%20 == 0:
                     util.printInfo(y)
                     util.printInfo(outputs)
-                    print ('Epoch [%d/%d], Iter [%d/%d], Loss: %.4f'
+                    print ('Epoch [%d/%d], Iter [%d/%d], Loss: %.8f'
                        %(epoch+1, hp_rnn.num_epochs,idx+1, 332//hp_rnn.batch_size, loss.data[0]))
                     print("--- %s seconds for epoch ---" % (time.time() - start_time))
                 self.lossHistory.append((epoch,idx,loss.data[0]))
@@ -213,7 +220,7 @@ class Manager(nn.Module):
         print ('Test Strat...')
         timeText = util.getTime()
         num = 4
-        for i in range(1,num+1,1):
+        for i in range(1,+num+1,1):
             self.load(self.outPath, num = i)
             for path, dirs, files in os.walk(self.inPath):
 
@@ -243,9 +250,12 @@ class Manager(nn.Module):
                             hidden = self.model.init_hidden()
                             hidden, outputs = self.model.forward(data_accel,hidden)
                             outputs = outputs.view(1,8000)
+                            outputs = np.expm1(outputs.data.numpy())[0]
+                            outputs = np.array(outputs)
                             
                             #util.printInfo(outputs)
-                            librosa.output.write_wav(self.inPath2+"/"+timeText+str(i)+"_"+os.path.splitext(f)[0]+".wav", np.expm1(outputs.data.numpy())[0], 16000)
+                            #librosa.output.write_wav(self.inPath2+"/"+timeText+str(i)+"_"+os.path.splitext(f)[0]+".wav", outputs, sr = 16000, norm = True)
+                            sf.write(self.inPath2+"/"+timeText+str(i)+"_"+os.path.splitext(f)[0]+".wav", outputs, 16000)
                             #power for noise
 #                            output = np.power(output,1.5)
         return 

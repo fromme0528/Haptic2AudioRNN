@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.utils import data as torchData
+import torch.nn.functional as F
 import os
 import csv
 import pickle
@@ -64,7 +65,7 @@ class AudioLoader(torchData.Dataset):
                 
                 #x,y,z 3 axis -> sum(x,y,z) 1 axis and material property
                 sum_3axis = np.sum(each_line[0:2])
-                sum_3axis *= 10
+                sum_3axis /= 10
                 each_line = [sum_3axis, each_line[-1]]
 
                 data_accel[idx2] = each_line
@@ -82,8 +83,15 @@ class AudioLoader(torchData.Dataset):
         #audio = [100*a for a in audio]
         #audio *= 10
 
-        audio = np.log1p(audio)
+#        audio = np.log1p(audio)
+        
+
+#        audio += np.min(audio)
+ #       audio /= np.sum(audio)
         data_audio = torch.from_numpy(audio)
+        #data_audio = F.softmax(data_audio)
+        #data_audio /= torch.sum(data_audio)
+
         return data_accel, data_audio #input-label
 
     def __len__(self):
@@ -159,23 +167,22 @@ def duplicate(inPath_folder):
                     interval.append(line_next[1] - line[1])
                     interval.append(line_next[2] - line[2])
 
-                    for i in range(0,8,1):
+                    for i in range(0,32,1):
                         temp = list()
-                        temp.append(line[0] + (interval[0] * i * 0.125))
-                        temp.append(line[1] + (interval[1] * i * 0.125))
-                        temp.append(line[2] + (interval[2] * i * 0.125))
+                        temp.append(line[0] + (interval[0] * i * 0.03125))
+                        temp.append(line[1] + (interval[1] * i * 0.03125))
+                        temp.append(line[2] + (interval[2] * i * 0.03125))
                         temp.append(line[-1])
                         output.append(temp)
                 else:
-                    for i in range(0,8,1):
+                    for i in range(0,32,1):
                         output.append(line)
-        with open (os.path.join("dataset/input_accel/"+inPath),'w',newline='') as fs:
+        with open (os.path.join("dataset/accel_8000/"+inPath),'w',newline='') as fs:
             wr = csv.writer(fs)
             for row in output:
                 wr.writerow(row)
                 
-
-#duplicate("./dataset/accel_split/")
+#duplicate("./dataset/accel_250/")
 
 
                 
@@ -259,7 +266,6 @@ def divide_accel_csv_old(inPath):
             # 연속으로 비어있는 칸도 있고 그럼.
             
             for i in range(1,4):
-
                 if data[i] == "":
                     print(idx)
             new = data[1:]
