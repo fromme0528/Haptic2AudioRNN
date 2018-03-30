@@ -3,11 +3,13 @@
 
 '''
 
-Input Size : 2000,2 (500Hz Accleration)
-Output Size : 8000 (16000Hz Audio Sampling Rate)
+Input Size : 250 (500Hz Accleration)
+Output Size : 101,257
 
-Input Size : 2000,2
-Output Size : 8000
+101,257
+
+250 -> 101
+10->1
 
 np.finfo(np.float32)
 finfo(resolution=1e-06, min=-3.4028235e+38, max=3.4028235e+38, dtype=float32)
@@ -103,17 +105,14 @@ class Manager(nn.Module):
 
         self.model = Haptic2AudioRNN()
 
-        if torch.cuda.is_available():
-            self.model.cuda()
+#        if torch.cuda.is_available():
+#            self.model.cuda()
 
         self.model.double()
 
         self.lossHistory = list()
 
     def load(self,inPath, time = '', num = 1):
-        #prefix = ''
-#        if not prefix == '':
-#            prefix = prefix + '_'
 
         try:
             #load the model files which are created lastly
@@ -124,8 +123,8 @@ class Manager(nn.Module):
             #timeText = files[0][:10] + '_'
             #self.model = torch.load(os.path.join(inPath, timeText + prefix + 'rnn.model'))
             self.model = torch.load(os.path.join(inPath, files[-num]))
-            if torch.cuda.is_available():
-                self.model.cuda()
+            #if torch.cuda.is_available():
+            #    self.model.cuda()
 
         except:
             print('error : can\'t load model')

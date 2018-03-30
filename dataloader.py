@@ -10,6 +10,7 @@ import numpy as np
 import hparams as hp
 from hparams import Linear as hp_linear
 from hparams import Cnn as hp_cnn
+from hparams import Rnn as hp_rnn
 from hparams import Default as hp_default
 import time
 import util
@@ -33,7 +34,7 @@ class AudioLoader(torchData.Dataset):
         files_accel = [f for f in files_accel if os.path.splitext(f)[-1] == '.csv']
         files_accel.sort()
         files_audio = os.listdir(inPathAudio) 
-        files_audio = [f for f in files_audio if os.path.splitext(f)[-1] == '.wav']
+        files_audio = [f for f in files_audio if os.path.splitext(f)[-1] == '.pickle']
         files_audio.sort()
         
 #        print(files_accel)
@@ -66,16 +67,39 @@ class AudioLoader(torchData.Dataset):
                 #x,y,z 3 axis -> sum(x,y,z) 1 axis and material property
                 sum_3axis = np.sum(each_line[0:2])
                 sum_3axis /= 10
-                each_line = [sum_3axis, each_line[-1]]
+                each_line = sum_3axis#[sum_3axis, each_line[-1]]
 
                 data_accel[idx2] = each_line
+            
+            output_data = list()
+            result = list()
+            for i in range(hp_rnn.sequence_len):
+                if i < hp_rnn.input_size-1:
+                    output_data = data_accel[:i+1]
+                    np.pad(output_data, (hp_rnn.input_size-i-1,0),'constant',constant_values=(0))
+                else:
+                    output_data = data_accel[i-9:i+1]
+                result.append(output_data)
 
-            data_accel = np.array(data_accel)
-            data_accel = torch.from_numpy(data_accel)
+                    
+            output_data = np.array(output_data)
+
+            output_data = torch.from_numpy(output_data)
 
         #with open(os.path.join(self.inPathAudio, self.fileList_audio[idx]),'rb') as fs:
         
-        audio, rate = librosa.load(self.inPathAudio+'/'+self.fileList_audio[idx], mono=True, sr = hp_default.sr) 
+        with open(os.path.join(self.inPathAudio+'/'+self.fileList_audio[idx]),'rb') as fs:
+            spectro = pickle.load(fs)
+#            spectro = spectro[0]
+            spectro = np.array(spectro)
+            label = torch.from_numpy(spectro)
+            print(label)
+        
+
+        #audio, rate = librosa.load(self.inPathAudio+'/'+self.fileList_audio[idx], mono=True, sr = hp_default.sr) 
+
+
+
 #        여기문제~~안읽힘~~
         #Problem : Audio Preprocessing
         #audio_normalized = preprocessing.normalizeAudio(audio)
@@ -84,15 +108,16 @@ class AudioLoader(torchData.Dataset):
         #audio *= 10
 
 #        audio = np.log1p(audio)
-        
 
 #        audio += np.min(audio)
  #       audio /= np.sum(audio)
-        data_audio = torch.from_numpy(audio)
+        
+        #data_audio = torch.from_numpy(audio)
+
         #data_audio = F.softmax(data_audio)
         #data_audio /= torch.sum(data_audio)
 
-        return data_accel, data_audio #input-label
+        return output_data, label #data_audio #input-label
 
     def __len__(self):
         return self.len

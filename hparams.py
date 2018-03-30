@@ -6,10 +6,11 @@
 # https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/02-intermediate/recurrent_neural_network/main.py
 # GRU is good for small data <-> LSTM. http://aikorea.org/blog/rnn-tutorial-4/
 
+
 class Rnn:
-	sequence_len = 8000#2000#8000#2000 #1
-	input_size = 2 #2
-	hidden_size= 1#4#4 #8000
+	sequence_len = 101#2000#8000#2000 #1
+	input_size = 10 #2
+	hidden_size= 1 #4#4 #8000
 	num_layers = 2
 	num_classes = 1
 

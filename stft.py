@@ -53,11 +53,10 @@ def wav2spctro(filePath):
 #wav to spectrogram
 #def transform(filePath):
 
-def wav2spctro2(filePath):
-	outPath = "input_spectro_0213"
+def wav2spctro2(filePath,outPath):
 	result = list()
 	#load audio
-	audio, rate = librosa.load("wav_0213\wood_hit.wav", mono=True, sr = hp_default.sr)
+	audio, rate = librosa.load(filePath, mono=True, sr = hp_default.sr)
 	print(audio)
 	print('audio :', audio.shape[0])
 	print('rate :', rate)

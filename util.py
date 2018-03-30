@@ -14,7 +14,8 @@ def getTime():
 	return timeText
 
 def printInfo(a):
-    print(torch.mean(a.data), torch.var(a.data), torch.max(a.data), torch.min(a.data))
+
+    print('mean: ',torch.mean(a.data), ",var:",torch.var(a.data), ",max:",torch.max(a.data),",min:", torch.min(a.data))
     return
 	
 '''
