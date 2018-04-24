@@ -24,17 +24,14 @@ from sklearn.decomposition import PCA
 # https://github.com/pytorch/examples/blob/master/snli/train.py
 
 class AudioLoader(torchData.Dataset):
-
-    # "input_accel_mmdd"
-    # "input_audio_mmdd"
-
     def __init__(self, inPathAccel, inPathAudio,isShuffle=False):
 
         files_accel = os.listdir(inPathAccel) 
         files_accel = [f for f in files_accel if os.path.splitext(f)[-1] == '.csv']
         files_accel.sort()
+
         files_audio = os.listdir(inPathAudio) 
-        files_audio = [f for f in files_audio if os.path.splitext(f)[-1] == '.pickle']
+        files_audio = [f for f in files_audio if os.path.splitext(f)[-1] == '.wav']
         files_audio.sort()
         
 #        print(files_accel)
@@ -52,9 +49,8 @@ class AudioLoader(torchData.Dataset):
 
         print('len of dataset : ',self.len, len(files_audio))
 
-
     def __getitem__(self, idx):
-
+        #print(self.inPathAccel,self.fileList_accel[idx])
         with open(os.path.join(self.inPathAccel,self.fileList_accel[idx]), 'r') as csvfile:
 
             rdr = csv.reader(csvfile)
@@ -63,78 +59,132 @@ class AudioLoader(torchData.Dataset):
             for idx2,each_line in enumerate(data_accel) :
 
                 each_line = [float(i) for i in each_line]
-                
+
                 #x,y,z 3 axis -> sum(x,y,z) 1 axis and material property
                 sum_3axis = np.sum(each_line[0:2])
-                sum_3axis /= 10
+                sum_3axis = (sum_3axis - 9) / 4.
                 each_line = sum_3axis#[sum_3axis, each_line[-1]]
 
                 data_accel[idx2] = each_line
-            
+
             output_data = list()
             result = list()
-            for i in range(hp_rnn.sequence_len):
-                if i < hp_rnn.input_size-1:
-                    output_data = data_accel[:i+1]
-                    np.pad(output_data, (hp_rnn.input_size-i-1,0),'constant',constant_values=(0))
+
+            pointer = 0
+            pointer_bool = True
+            for i in range(0,hp_rnn.sequence_len):
+
+                if pointer < 9:#input_size-1
+                    output_data = data_accel[:pointer+1]
+                    output_data = np.pad(output_data, (hp_rnn.input_size-pointer-1,0),'constant',constant_values=(0))
                 else:
-                    output_data = data_accel[i-9:i+1]
-                result.append(output_data)
+                    output_data = data_accel[pointer-9:pointer+1]
 
-                    
-            output_data = np.array(output_data)
+                if pointer_bool :
+                    pointer += 2
+                else:
+                    pointer +=3
 
-            output_data = torch.from_numpy(output_data)
+                pointer_bool =  not pointer_bool
 
-        #with open(os.path.join(self.inPathAudio, self.fileList_audio[idx]),'rb') as fs:
-        
-        with open(os.path.join(self.inPathAudio+'/'+self.fileList_audio[idx]),'rb') as fs:
-            spectro = pickle.load(fs)
-#            spectro = spectro[0]
-            spectro = np.array(spectro)
-            label = torch.from_numpy(spectro)
-            print(label)
-        
+                if i == hp_rnn.sequence_len-1:
+                    result.append(result[-1])
+                else:
+                    result.append(output_data)
 
-        #audio, rate = librosa.load(self.inPathAudio+'/'+self.fileList_audio[idx], mono=True, sr = hp_default.sr) 
+            result = np.array(result)
+            result = torch.from_numpy(result)
 
 
+        #print(self.inPathAudio+'/'+self.fileList_audio[idx])
+        #print(self.inPathAudio+'/'+self.fileList_audio[idx])
+        audio, rate = librosa.load(self.inPathAudio+'/'+self.fileList_audio[idx], mono=True, sr = hp_default.sr) 
+        spectro = librosa.stft(audio,
+                            n_fft = hp_default.n_fft,
+                            hop_length = hp_default.hop_length,
+                            win_length = hp_default.win_length
+        )
 
-#        여기문제~~안읽힘~~
-        #Problem : Audio Preprocessing
-        #audio_normalized = preprocessing.normalizeAudio(audio)
-        #audio = processing(audio, mode = 'pre', input_type = 'audio')
-        #audio = [100*a for a in audio]
-        #audio *= 10
+        #normalize
+        #print(spectro)
 
-#        audio = np.log1p(audio)
-
-#        audio += np.min(audio)
- #       audio /= np.sum(audio)
-        
-        #data_audio = torch.from_numpy(audio)
-
-        #data_audio = F.softmax(data_audio)
-        #data_audio /= torch.sum(data_audio)
-
-        return output_data, label #data_audio #input-label
+        spectro = np.log1p(np.abs(spectro.T)) # make 101,257
+        spectro /= 2.2
+        label = torch.from_numpy(spectro)
+        return result, label #data_audio #input-label
 
     def __len__(self):
         return self.len
 
-def processing(input_list, mode, input_type):
-    
-    if mode == 'pre':
-        if input_type == 'accel':
-            input_list = 10 * input_list
-        elif input_type =='audio':
-            input_list = 10 * input_list
-    
-    elif mode =='post':
-        if input_type == 'audio':
-            input_list = input_list / 10.0
+class AudioLoaderLinear(torchData.Dataset):
+    def __init__(self, inPathAccel, inPathAudio,isShuffle=False):
 
-    return input_list
+        files_accel = os.listdir(inPathAccel) 
+        files_accel = [f for f in files_accel if os.path.splitext(f)[-1] == '.csv']
+        files_accel.sort()
+
+        files_audio = os.listdir(inPathAudio) 
+        files_audio = [f for f in files_audio if os.path.splitext(f)[-1] == '.wav']
+        files_audio.sort()
+        
+#        print(files_accel)
+#        print(files_audio)
+        
+        if isShuffle:
+            random.shuffle(files_accel)
+
+        self.inPathAccel = inPathAccel
+        self.inPathAudio = inPathAudio
+        self.len = len(files_accel)
+        self.fileList_accel = files_accel[:self.len]
+        self.fileList_audio = files_audio[:self.len]
+        self.isShuffle = isShuffle
+
+        print('len of dataset : ',self.len, len(files_audio))
+
+    def __getitem__(self, idx):
+        #print(self.inPathAccel,self.fileList_accel[idx])
+        with open(os.path.join(self.inPathAccel,self.fileList_accel[idx]), 'r') as csvfile:
+
+            rdr = csv.reader(csvfile)
+            data_accel = [line for line in rdr]
+
+            for idx2,each_line in enumerate(data_accel) :
+
+                each_line = [float(i) for i in each_line]
+
+                #x,y,z 3 axis -> sum(x,y,z) 1 axis and material property
+                sum_3axis = np.sum(each_line[0:2])
+                sum_3axis = (sum_3axis - 9) / 4.
+                each_line = sum_3axis#[sum_3axis, each_line[-1]]
+
+                data_accel[idx2] = each_line
+
+            result = np.array(data_accel)
+            result = torch.from_numpy(result)
+
+
+        #print(self.inPathAudio+'/'+self.fileList_audio[idx])
+        #print(self.inPathAudio+'/'+self.fileList_audio[idx])
+        audio, rate = librosa.load(self.inPathAudio+'/'+self.fileList_audio[idx], mono=True, sr = hp_default.sr) 
+        spectro = librosa.stft(audio,
+                            n_fft = hp_default.n_fft,
+                            hop_length = hp_default.hop_length,
+                            win_length = hp_default.win_length
+        )
+
+        #normalize
+        #print(spectro)
+
+        spectro = np.log1p(np.abs(spectro.T)) # make 101,257
+        spectro /= 2.2
+        label = torch.from_numpy(spectro)
+        return result, label #data_audio #input-label
+
+    def __len__(self):
+        return self.len
+
+
 
 # filePath = "acceleration_0213\wood_hit.csv"
 # 500
@@ -208,9 +258,6 @@ def duplicate(inPath_folder):
                 wr.writerow(row)
                 
 #duplicate("./dataset/accel_250/")
-
-
-                
 
 # input : a,b
 # output : data in (b,c)

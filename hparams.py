@@ -10,11 +10,10 @@
 class Rnn:
 	sequence_len = 101#2000#8000#2000 #1
 	input_size = 10 #2
-	hidden_size= 1 #4#4 #8000
-	num_layers = 2
-	num_classes = 1
+	hidden_size= 257 #4#4 #8000
+	num_layers = 3
 
-	num_epochs = 15
+	num_epochs = 50
 	batch_size = 1
 	learning_rate = 0.0001
 
@@ -25,7 +24,7 @@ class Default:
 	sr = 16000
 	frame_shift = 0.005 #seconds 
 	frame_length = 0.025 #seconds
-	n_fft= 512
+	n_fft= 512                                                                                                                                   
 
 	hop_length = int(sr*frame_shift) #80 
 	win_length = int(sr*frame_length) #400

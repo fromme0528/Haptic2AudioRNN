@@ -17,8 +17,14 @@ def printInfo(a):
 
     print('mean: ',torch.mean(a.data), ",var:",torch.var(a.data), ",max:",torch.max(a.data),",min:", torch.min(a.data))
     return
-	
-'''
+
+
+# [-1,1] -> [0,1]
+def denorm(x):
+	out = (x + 1) / 2
+	return out.clamp(0, 1)
+
+
 #Not Used
 def divideList(target, size):
 
@@ -65,4 +71,4 @@ def saveLossHistory(lossHistory, outPath):
 
 	with open(os.path.join(os.path.dirname(outPath), fileName), 'wb') as fs:
 
-		pickle.dump(lossHistory, fs)'''
+		pickle.dump(lossHistory, fs)
